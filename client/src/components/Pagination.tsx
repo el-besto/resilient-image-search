@@ -6,6 +6,10 @@ interface PaginationProps {
 }
 
 export default function Pagination({ disabled, page, totalPages, onPageChange }: PaginationProps) {
+  if (totalPages === 0) {
+    return null;
+  }
+
   const hasNextPage = totalPages !== null && page < totalPages;
   const totalLabel = totalPages === null ? '' : ` of ${totalPages}`;
 
