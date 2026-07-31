@@ -9,6 +9,14 @@ export const photoKeys = {
     [...photoKeys.all, normalizedQuery, page] as const,
 };
 
+/**
+ * Creates the browser cache with the search flow's deliberate request policy.
+ * Pages remain fresh for five minutes so recent navigation is instant, while a
+ * 30-minute retention window keeps useful inactive pages without retaining them
+ * indefinitely. Automatic retries and focus/reconnect refetches are disabled to
+ * protect provider quota and keep recovery user-triggered. The default
+ * refetch-on-mount behavior remains enabled so stale cached pages can revalidate.
+ */
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {

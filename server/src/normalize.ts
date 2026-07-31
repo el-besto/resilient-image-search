@@ -116,6 +116,12 @@ function normalizePhoto(raw: unknown): Photo | null {
   };
 }
 
+/**
+ * Converts an unknown Unsplash payload into the frontend-owned search contract.
+ * An invalid envelope rejects the response, while unusable individual photos are
+ * omitted so valid siblings survive. Emitted photos retain nullable descriptions
+ * and always include normalized attribution links.
+ */
 export function normalizeUnsplashSearch(raw: unknown, query: string, page: number): SearchResponse {
   if (
     !isRecord(raw) ||

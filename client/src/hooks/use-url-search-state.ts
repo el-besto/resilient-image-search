@@ -12,6 +12,13 @@ function readPage(value: string | null): number {
   return Number.isSafeInteger(page) && page > 0 ? page : 1;
 }
 
+/**
+ * Keeps the URL as the only committed query/page authority while the input owns
+ * a transient draft. Debounced edits replace history, explicit submissions and
+ * page changes push history, and browser navigation synchronizes the draft back
+ * from the URL. Pagination is blocked while a draft commit is pending so those
+ * transitions cannot race each other.
+ */
 export function useUrlSearchState() {
   const [searchParams, setSearchParams] = useSearchParams();
   const committedQuery = normalizeSearchQuery(searchParams.get('query') ?? '');

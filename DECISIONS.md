@@ -23,7 +23,7 @@ motion.
 > The decisions you're most and least sure about, and the alternatives you rejected.
 
 The URL owns the committed query and page while the form owns only the transient draft. Typing
-commits after 350 milliseconds with history replacement; explicit submission and pagination push
+commits after 500 milliseconds with history replacement; explicit submission and pagination push
 meaningful history entries. Previous/next pagination keeps the view shareable and avoids
 infinite-scroll and scroll-restoration complexity.
 

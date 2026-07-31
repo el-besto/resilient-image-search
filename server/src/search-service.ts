@@ -104,6 +104,12 @@ function buildSearchCacheKey(input: SearchInput): string {
 
 export type SearchUpstream = (input: SearchInput) => Promise<SearchResponse>;
 
+/**
+ * Adds successful-response caching and same-key request coalescing around an
+ * upstream search boundary. The in-flight registry owns shared work independently
+ * of any one browser request and always removes settled promises, so failures
+ * cannot populate the cache or poison later attempts.
+ */
 export function createSearchService(options: {
   cache: LRUCache<string, SearchResponse>;
   upstream: SearchUpstream;
@@ -139,6 +145,12 @@ export function createSearchService(options: {
   };
 }
 
+/**
+ * Makes one request to the fixed Unsplash search endpoint and returns the
+ * normalized domain response. This boundary owns the upstream timeout, performs
+ * no automatic retry, and classifies HTTP, transport, timeout, and payload
+ * failures for the public error translator.
+ */
 export async function fetchUnsplash(input: SearchInput): Promise<SearchResponse> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
 
@@ -218,6 +230,11 @@ function applicationError(
   };
 }
 
+/**
+ * Maps internal and provider failures to the stable, safe API error contract.
+ * Provider details remain server-side; only actionable rate-limit guidance is
+ * preserved through the optional Retry-After value.
+ */
 export function translateSearchError(error: unknown): SearchErrorResponse {
   if (error instanceof InvalidSearchRequestError) {
     return applicationError(
