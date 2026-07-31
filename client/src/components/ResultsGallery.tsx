@@ -5,8 +5,8 @@ const RESULT_IMAGE_SIZES = '(max-width: 30rem) 100vw, (max-width: 60rem) 50vw, 2
 
 function getLargerImageLabel(photo: Photo): string {
   return photo.contentDescription
-    ? `View larger image: ${photo.contentDescription}`
-    : 'View larger image';
+    ? `View larger image: ${photo.contentDescription} (opens in a new tab)`
+    : 'View larger image (opens in a new tab)';
 }
 
 export default function ResultsGallery({ photos }: { photos: Photo[] }) {
@@ -16,7 +16,12 @@ export default function ResultsGallery({ photos }: { photos: Photo[] }) {
       {photos.map((photo, index) => (
         <li key={photo.id} className="results-gallery__item">
           <figure className="results-gallery__figure">
-            <a className="results-gallery__image-link" href={photo.fullUrl}>
+            <a
+              className="results-gallery__image-link"
+              href={photo.fullUrl}
+              target="_blank"
+              rel="noopener"
+            >
               <img
                 className="results-gallery__image"
                 src={photo.thumbUrl}
