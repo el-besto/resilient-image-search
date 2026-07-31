@@ -1,77 +1,112 @@
-import { type FormEvent, useState } from 'react';
-import { ApiError, fetchSearch } from '../lib/api';
+import type { ReactNode } from 'react';
+import Pagination from '../components/Pagination';
+import SearchForm from '../components/SearchForm';
+import { useUrlSearchState } from '../hooks/use-url-search-state';
+import { ApiError } from '../lib/api';
 import { pluralize } from '../lib/format';
+import { usePhotoSearch } from '../lib/search-query';
 import type { Photo } from '../lib/types';
 
-/**
- * ⚠️ INTENTIONALLY NAIVE BASELINE — this is your starting point, not the goal.
- *
- * It fetches on submit and dumps thumbnails into a grid so the app boots
- * end-to-end. It gets almost everything "senior" wrong on purpose. Your job is
- * to fix it. Non-exhaustive list of what's missing / broken here:
- *
- *   • No debounce and no stale-response handling — fire two searches quickly and
- *     the slower one can overwrite the newer results (race condition).
- *   • No request cancellation, caching, or de-duplication.
- *   • Search state lives in component state, not the URL — refresh/share loses it.
- *   • No pagination / load-more.
- *   • Images cause layout shift and load full-size thumbs with no lazy loading.
- *   • Loading / empty / error states are barely handled.
- *   • The grid isn't keyboard-navigable and has no detail view wired up.
- *   • No meaningful tests.
- *
- * Re-architect as you see fit — you are not required to keep any of this code.
- */
-export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Photo[]>([]);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
-  const [error, setError] = useState<string | null>(null);
+function SearchStatus({ children }: { children: string }) {
+  return (
+    <p className="search__status" role="status">
+      {children}
+    </p>
+  );
+}
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setStatus('loading');
-    setError(null);
-    try {
-      const data = await fetchSearch(query.trim());
-      setResults(data.results);
-      setStatus('idle');
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong.');
-      setStatus('error');
-    }
+function SearchError({
+  error,
+  retrying,
+  onRetry,
+}: {
+  error: unknown;
+  retrying: boolean;
+  onRetry: () => void;
+}) {
+  const message = error instanceof ApiError ? error.message : 'Something went wrong. Try again.';
+
+  return (
+    <div className="search__error" role="alert">
+      <p>{message}</p>
+      <button type="button" disabled={retrying} onClick={onRetry}>
+        {retrying ? 'Retrying…' : 'Retry'}
+      </button>
+    </div>
+  );
+}
+
+function ResultsList({ photos }: { photos: Photo[] }) {
+  return (
+    <ul className="grid">
+      {photos.map((photo) => (
+        <li key={photo.id} className="grid__item">
+          <img className="grid__img" src={photo.thumbUrl} alt={photo.contentDescription ?? ''} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function SearchPage() {
+  const { committedQuery, draft, hasPendingDraft, page, setDraft, setPage, submit } =
+    useUrlSearchState();
+  const search = usePhotoSearch(committedQuery, page);
+  const retry = () => void search.refetch();
+  const initialLoading = committedQuery.length > 0 && !search.data && search.isPending;
+
+  let resultsContent: ReactNode = null;
+
+  if (!committedQuery) {
+    resultsContent = <SearchStatus>Enter a search term to begin.</SearchStatus>;
+  } else if (initialLoading) {
+    resultsContent = <SearchStatus>{`Loading page ${page} for “${committedQuery}”…`}</SearchStatus>;
+  } else if (!search.data && search.isError) {
+    resultsContent = (
+      <SearchError error={search.error} retrying={search.isFetching} onRetry={retry} />
+    );
+  } else if (search.data) {
+    const refreshFailed = search.isError;
+
+    resultsContent = (
+      <>
+        {search.isFetching && !refreshFailed && (
+          <SearchStatus>{`Refreshing page ${page} for “${committedQuery}”…`}</SearchStatus>
+        )}
+        {refreshFailed && (
+          <SearchError error={search.error} retrying={search.isFetching} onRetry={retry} />
+        )}
+        {search.data.results.length === 0 ? (
+          <SearchStatus>{`No results found for “${committedQuery}”.`}</SearchStatus>
+        ) : (
+          <>
+            <p className="search__count">
+              {pluralize(search.data.results.length, 'result')} on this page
+            </p>
+            <ResultsList photos={search.data.results} />
+          </>
+        )}
+        <Pagination
+          disabled={hasPendingDraft}
+          page={page}
+          totalPages={search.data.totalPages}
+          onPageChange={setPage}
+        />
+      </>
+    );
   }
 
   return (
     <div className="search">
-      <form className="search__form" onSubmit={onSubmit}>
-        <input
-          className="search__input"
-          type="search"
-          placeholder="Search images…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search images"
-        />
-        <button className="search__button" type="submit">
-          Search
-        </button>
-      </form>
-
-      {status === 'loading' && <p>Loading…</p>}
-      {status === 'error' && <p role="alert">{error}</p>}
-      {status === 'idle' && results.length > 0 && (
-        <p className="search__count">{pluralize(results.length, 'result')}</p>
-      )}
-
-      <ul className="grid">
-        {results.map((photo) => (
-          <li key={photo.id} className="grid__item">
-            <img className="grid__img" src={photo.thumbUrl} alt={photo.contentDescription ?? ''} />
-          </li>
-        ))}
-      </ul>
+      <h1>Search the image library</h1>
+      <SearchForm draft={draft} onDraftChange={setDraft} onSubmit={submit} />
+      <section
+        className={`search__results${initialLoading ? ' search__results--loading' : ''}`}
+        aria-labelledby="search-results-heading"
+      >
+        <h2 id="search-results-heading">Results</h2>
+        {resultsContent}
+      </section>
     </div>
   );
 }

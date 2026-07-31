@@ -39,9 +39,18 @@ body {
 }
 
 .search__form {
+  margin-bottom: 16px;
+}
+
+.search__label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.search__form-controls {
   display: flex;
   gap: var(--gap);
-  margin-bottom: 16px;
 }
 
 .search__input {
@@ -62,6 +71,38 @@ body {
 
 .search__count {
   color: var(--muted);
+}
+
+.search__results {
+  min-block-size: 8rem;
+}
+
+.search__results--loading {
+  min-block-size: min(50vh, 32rem);
+}
+
+.search__status {
+  color: var(--muted);
+}
+
+.search__error {
+  padding: 16px;
+  border: 1px solid #c5483d;
+  border-radius: 8px;
+  background: #fff5f3;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+  margin-top: 24px;
+}
+
+.pagination button,
+.search__error button {
+  padding: 8px 14px;
 }
 
 .grid {

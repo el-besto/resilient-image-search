@@ -57,8 +57,8 @@ export async function parseSearchResponse(response: Response): Promise<SearchRes
 
 export async function fetchSearch(
   query: string,
-  page = 1,
-  signal?: AbortSignal,
+  page: number,
+  signal: AbortSignal,
 ): Promise<SearchResponse> {
   const params = new URLSearchParams({ query, page: String(page) });
   const response = await fetch(`/api/search?${params}`, { signal });
