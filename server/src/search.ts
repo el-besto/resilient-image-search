@@ -53,6 +53,7 @@ router.get('/search', async (req: Request, res: Response) => {
     const body = await upstream.json();
     return res.json(normalizeUnsplashSearch(body, query, page));
   } catch (err) {
+    console.error(err);
     return res.status(502).json({ error: 'Failed to reach the image provider.' });
   }
 });

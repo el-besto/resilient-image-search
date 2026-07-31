@@ -16,9 +16,14 @@
     "dev:server": "npm run dev -w server",
     "build": "npm run build -w server && npm run build -w client",
     "test": "npm run test -w client && npm run test -w server",
-    "typecheck": "npm run typecheck -w client && npm run typecheck -w server"
+    "typecheck": "npm run typecheck -w client && npm run typecheck -w server",
+    "format": "biome format --write client server package.json biome.json",
+    "format:check": "biome format client server package.json biome.json",
+    "lint": "biome lint client server",
+    "check": "biome check client server package.json biome.json"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.6",
     "concurrently": "^8.2.2"
   }
 }
