@@ -6,6 +6,7 @@
   --fg: #1a1a1a;
   --muted: #666;
   --border: #e2e2e2;
+  --focus: #075fd8;
 }
 
 * {
@@ -16,6 +17,11 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--fg);
+}
+
+:where(a, button, input):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .app__header {
@@ -105,18 +111,63 @@ body {
   padding: 8px 14px;
 }
 
-.grid {
+.pagination button:disabled {
+  cursor: not-allowed;
+}
+
+.results-gallery {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 24px var(--gap);
 }
 
-.grid__img {
+.results-gallery__item {
+  min-width: 0;
+}
+
+.results-gallery__figure {
+  height: 100%;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.results-gallery__image-link {
+  display: block;
+  overflow: hidden;
+  border-radius: 7px 7px 0 0;
+  background: #f3f3f3;
+}
+
+.results-gallery__image {
+  display: block;
   width: 100%;
   height: auto;
-  display: block;
-  border-radius: 8px;
+}
+
+.results-gallery__caption {
+  padding: 10px 12px 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.results-gallery__caption a {
+  color: var(--fg);
+}
+
+@media (max-width: 30rem) {
+  .app__header,
+  .app__main {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .search__form-controls {
+    flex-direction: column;
+  }
 }

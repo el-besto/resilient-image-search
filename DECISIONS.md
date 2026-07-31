@@ -38,6 +38,13 @@ and retains unused entries for 30 minutes. Automatic retry and focus/reconnect r
 disabled. An uncached navigation removes the prior page's cards instead of presenting mismatched
 results while the destination loads.
 
+The results remain a semantic list of figures with native larger-image and attribution links
+rather than an ARIA grid widget or custom keyboard model. Intrinsic dimensions reserve layout
+space; two provider sizes serve responsive images; the first four load eagerly and the rest lazily.
+An ARIA grid would require managed focus plus arrow, Home, and End key behavior without improving
+this document-style browsing flow. This favors native behavior and a small inspectable
+implementation over blur-up effects.
+
 The submission uses Node.js 22 so development and final verification run on a supported LTS line
 rather than the starter's older convenience pin.
 
@@ -62,3 +69,7 @@ I used Codex to inspect and reconcile the challenge, implementation plan, and st
 the runtime baseline; and assist with implementation and focused regression checks. I reviewed
 each gated change and kept scope, dependency, and resilience decisions human-approved rather
 than accepting generated content by default.
+
+CSS is not my strongest area, so I relied heavily on Codex for the responsive gallery and focus
+styling. I kept those generated rules deliberately small enough to inspect, explain, and validate
+manually instead of introducing a styling framework I could not defend as clearly.

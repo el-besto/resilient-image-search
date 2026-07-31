@@ -81,14 +81,18 @@ describe('SearchPage', () => {
       dogRequest.resolve(searchResponse('dog', 1, 'a dog'));
       await Promise.resolve();
     });
-    expect(await screen.findByAltText('a dog')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'View larger image: a dog' }),
+    ).toBeInTheDocument();
 
     await act(async () => {
       catRequest.resolve(searchResponse('cat', 1, 'a cat'));
       await Promise.resolve();
     });
-    expect(screen.queryByAltText('a cat')).not.toBeInTheDocument();
-    expect(screen.getByAltText('a dog')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'View larger image: a cat' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View larger image: a dog' })).toBeInTheDocument();
 
     rendered.unmount();
     rendered.queryClient.clear();
@@ -110,26 +114,34 @@ describe('SearchPage', () => {
     const rendered = renderAtRoute(<SearchPage />, '/?query=cats&page=2');
     const user = userEvent.setup();
 
-    expect(await screen.findByAltText('cats page 2')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'View larger image: cats page 2' }),
+    ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole('button', { name: 'Previous' }));
+    await user.click(screen.getByRole('button', { name: 'Previous page, page 1' }));
 
     expect(await screen.findByText('Loading page 1 for “cats”…')).toBeInTheDocument();
-    expect(screen.queryByAltText('cats page 2')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'View larger image: cats page 2' }),
+    ).not.toBeInTheDocument();
     expect(rendered.router.state.location.search).toBe('?query=cats&page=1');
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       pageOneRequest.resolve(searchResponse('cats', 1, 'cats page 1'));
     });
-    expect(await screen.findByAltText('cats page 1')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'View larger image: cats page 1' }),
+    ).toBeInTheDocument();
 
     await act(async () => {
       await rendered.router.navigate(-1);
     });
 
-    expect(await screen.findByAltText('cats page 2')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'View larger image: cats page 2' }),
+    ).toBeInTheDocument();
     expect(rendered.router.state.location.search).toBe('?query=cats&page=2');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

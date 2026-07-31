@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import Pagination from '../components/Pagination';
+import ResultsGallery from '../components/ResultsGallery';
 import SearchForm from '../components/SearchForm';
 import { useUrlSearchState } from '../hooks/use-url-search-state';
 import { ApiError } from '../lib/api';
 import { pluralize } from '../lib/format';
 import { usePhotoSearch } from '../lib/search-query';
-import type { Photo } from '../lib/types';
 
 function SearchStatus({ children }: { children: string }) {
   return (
@@ -33,18 +33,6 @@ function SearchError({
         {retrying ? 'Retrying…' : 'Retry'}
       </button>
     </div>
-  );
-}
-
-function ResultsList({ photos }: { photos: Photo[] }) {
-  return (
-    <ul className="grid">
-      {photos.map((photo) => (
-        <li key={photo.id} className="grid__item">
-          <img className="grid__img" src={photo.thumbUrl} alt={photo.contentDescription ?? ''} />
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -80,10 +68,10 @@ export default function SearchPage() {
           <SearchStatus>{`No results found for “${committedQuery}”.`}</SearchStatus>
         ) : (
           <>
-            <p className="search__count">
+            <p className="search__count" role="status">
               {pluralize(search.data.results.length, 'result')} on this page
             </p>
-            <ResultsList photos={search.data.results} />
+            <ResultsGallery photos={search.data.results} />
           </>
         )}
         <Pagination
@@ -104,7 +92,9 @@ export default function SearchPage() {
         className={`search__results${initialLoading ? ' search__results--loading' : ''}`}
         aria-labelledby="search-results-heading"
       >
-        <h2 id="search-results-heading">Results</h2>
+        <h2 id="search-results-heading">
+          {committedQuery ? `Results for “${committedQuery}”` : 'Results'}
+        </h2>
         {resultsContent}
       </section>
     </div>
