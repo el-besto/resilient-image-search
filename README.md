@@ -24,7 +24,7 @@ baseline entirely. Nothing here is sacred.
 
 ## Setup
 
-Requires **Node 18+** (`.nvmrc` pins 20).
+Requires **Node 22+** (`.nvmrc` pins the supported Node.js 22 LTS line).
 
 > `npm install` may print an `npm audit` warning. It comes from dev-only build
 > tooling (esbuild via Vite/Vitest) and doesn't affect the app you ship — safe
