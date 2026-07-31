@@ -26,11 +26,7 @@ interface UnsplashSearchBody {
   results: UnsplashPhoto[];
 }
 
-export function normalizeUnsplashSearch(
-  raw: unknown,
-  query: string,
-  page: number,
-): SearchResponse {
+export function normalizeUnsplashSearch(raw: unknown, query: string, page: number): SearchResponse {
   // Upstream is untrusted — cast at the boundary. A stricter implementation
   // would validate this (e.g. with zod) rather than trust the shape.
   const body = raw as UnsplashSearchBody;

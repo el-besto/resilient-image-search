@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 /**
  * Stub for the "image detail view" depth area. A route already exists at

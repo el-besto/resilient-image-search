@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { fetchSearch, ApiError } from '../lib/api';
+import { type FormEvent, useState } from 'react';
+import { ApiError, fetchSearch } from '../lib/api';
 import { pluralize } from '../lib/format';
 import type { Photo } from '../lib/types';
 

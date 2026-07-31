@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { normalizeUnsplashSearch } from './normalize.js';
 
 // Example test — proves the Vitest setup works and demonstrates the kind of
