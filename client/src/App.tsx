@@ -7,7 +7,6 @@ export default function App() {
         <Link to="/" className="app__brand">
           Image Library
         </Link>
-        {/* TODO(favorites): a link/count to a favorites view could live here. */}
       </header>
       <main className="app__main">
         <Outlet />

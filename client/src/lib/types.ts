@@ -16,7 +16,6 @@ export interface Photo {
   height: number;
   thumbUrl: string;
   fullUrl: string;
-  blurHash?: string | null;
   attribution: PhotoAttribution;
 }
 

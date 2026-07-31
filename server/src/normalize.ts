@@ -18,7 +18,6 @@ interface UnsplashPhoto {
   alt_description?: unknown;
   width: number;
   height: number;
-  blur_hash?: unknown;
   urls: {
     small: string;
     regular: string;
@@ -106,7 +105,6 @@ function normalizePhoto(raw: unknown): Photo | null {
     height: raw.height,
     thumbUrl: new URL(raw.urls.small).toString(),
     fullUrl: new URL(raw.urls.regular).toString(),
-    blurHash: nonEmptyText(raw.blur_hash),
     attribution: {
       creatorName: raw.user.name.trim(),
       creatorUrl: withAttributionParams(raw.user.links.html),

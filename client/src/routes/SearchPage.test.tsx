@@ -18,7 +18,6 @@ function searchResponse(query: string, page: number, description: string): Respo
         height: 800,
         thumbUrl: `https://images.example/${query}-${page}-small.jpg`,
         fullUrl: `https://images.example/${query}-${page}-regular.jpg`,
-        blurHash: null,
         attribution: {
           creatorName: 'Ada L.',
           creatorUrl: 'https://unsplash.com/@ada',

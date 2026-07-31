@@ -1,8 +1,4 @@
-/**
- * The domain shape YOUR frontend consumes. This is intentionally decoupled from
- * whatever upstream API you chose — the frontend should never see the vendor's
- * raw payload. Add/trim fields to fit your product, but keep this the contract.
- */
+/** The frontend-owned domain contract, decoupled from the provider's raw payload. */
 export interface PhotoAttribution {
   creatorName: string;
   creatorUrl: string;
@@ -18,10 +14,8 @@ export interface Photo {
   height: number;
   /** A small/thumbnail source for the grid. */
   thumbUrl: string;
-  /** A larger source for the detail view. */
+  /** A larger source opened from the results gallery. */
   fullUrl: string;
-  /** Optional low-quality placeholder (e.g. Unsplash blur_hash) for blur-up. */
-  blurHash?: string | null;
   attribution: PhotoAttribution;
 }
 

@@ -15,8 +15,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api', searchRouter);
 
-// Basic fallthrough error handler. Keep the client's error contract stable:
-// always JSON with an `error` string.
+// Keep unknown routes JSON-only instead of returning Express's HTML fallback.
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found.' });
 });

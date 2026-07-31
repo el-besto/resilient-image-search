@@ -8,7 +8,6 @@ function photo(overrides: Record<string, unknown> = {}) {
     alt_description: 'a cat on a wall',
     width: 4000,
     height: 3000,
-    blur_hash: 'LKO2?U',
     urls: {
       small: 'https://images.example/small.jpg',
       regular: 'https://images.example/regular.jpg',
@@ -47,7 +46,6 @@ describe('normalizeUnsplashSearch', () => {
     expect(result.results[0]).toMatchObject({
       id: 'abc',
       contentDescription: 'a cat on a wall',
-      blurHash: 'LKO2?U',
       attribution: {
         creatorName: 'Ada L.',
         sourceName: 'Unsplash',
