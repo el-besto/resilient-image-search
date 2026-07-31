@@ -75,6 +75,8 @@ describe('SearchPage', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(catSignals[0]?.aborted).toBe(true);
     });
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Loading page 1 for “dog”…');
 
     await act(async () => {
       dogRequest.resolve(searchResponse('dog', 1, 'a dog'));
@@ -85,6 +87,8 @@ describe('SearchPage', () => {
         name: 'View larger image: a dog (opens in a new tab)',
       }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status).toHaveTextContent('1 result on this page');
 
     await act(async () => {
       catRequest.resolve(searchResponse('cat', 1, 'a cat'));

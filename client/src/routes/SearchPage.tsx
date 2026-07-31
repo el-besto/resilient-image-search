@@ -9,7 +9,7 @@ import { usePhotoSearch } from '../lib/search-query';
 
 function SearchStatus({ children }: { children: string }) {
   return (
-    <p className="search__status" role="status">
+    <p className="search__status" role="status" aria-atomic="true">
       {children}
     </p>
   );
@@ -43,12 +43,13 @@ export default function SearchPage() {
   const retry = () => void search.refetch();
   const initialLoading = committedQuery.length > 0 && !search.data && search.isPending;
 
+  let statusMessage = '';
   let resultsContent: ReactNode = null;
 
   if (!committedQuery) {
-    resultsContent = <SearchStatus>Enter a search term to begin.</SearchStatus>;
+    statusMessage = 'Enter a search term to begin.';
   } else if (initialLoading) {
-    resultsContent = <SearchStatus>{`Loading page ${page} for “${committedQuery}”…`}</SearchStatus>;
+    statusMessage = `Loading page ${page} for “${committedQuery}”…`;
   } else if (!search.data && search.isError) {
     resultsContent = (
       <SearchError error={search.error} retrying={search.isFetching} onRetry={retry} />
@@ -56,24 +57,20 @@ export default function SearchPage() {
   } else if (search.data) {
     const refreshFailed = search.isError;
 
+    if (search.isFetching && !refreshFailed) {
+      statusMessage = `Refreshing page ${page} for “${committedQuery}”…`;
+    } else if (search.data.results.length === 0) {
+      statusMessage = `No results found for “${committedQuery}”.`;
+    } else {
+      statusMessage = `${pluralize(search.data.results.length, 'result')} on this page`;
+    }
+
     resultsContent = (
       <>
-        {search.isFetching && !refreshFailed && (
-          <SearchStatus>{`Refreshing page ${page} for “${committedQuery}”…`}</SearchStatus>
-        )}
         {refreshFailed && (
           <SearchError error={search.error} retrying={search.isFetching} onRetry={retry} />
         )}
-        {search.data.results.length === 0 ? (
-          <SearchStatus>{`No results found for “${committedQuery}”.`}</SearchStatus>
-        ) : (
-          <>
-            <p className="search__count" role="status">
-              {pluralize(search.data.results.length, 'result')} on this page
-            </p>
-            <ResultsGallery photos={search.data.results} />
-          </>
-        )}
+        {search.data.results.length > 0 && <ResultsGallery photos={search.data.results} />}
         <Pagination
           disabled={hasPendingDraft}
           page={page}
@@ -95,6 +92,7 @@ export default function SearchPage() {
         <h2 id="search-results-heading">
           {committedQuery ? `Results for “${committedQuery}”` : 'Results'}
         </h2>
+        <SearchStatus>{statusMessage}</SearchStatus>
         {resultsContent}
       </section>
     </div>
