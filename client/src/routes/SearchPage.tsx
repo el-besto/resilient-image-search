@@ -68,7 +68,7 @@ export default function SearchPage() {
       <ul className="grid">
         {results.map((photo) => (
           <li key={photo.id} className="grid__item">
-            <img className="grid__img" src={photo.thumbUrl} alt={photo.description} />
+            <img className="grid__img" src={photo.thumbUrl} alt={photo.contentDescription ?? ''} />
           </li>
         ))}
       </ul>

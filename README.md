@@ -32,7 +32,7 @@ Requires **Node 22+** (`.nvmrc` pins the supported Node.js 22 LTS line).
 
 ```bash
 npm install                 # installs both workspaces
-cp .env.example .env        # then add your key (see below)
+cp .env.example server/.env # then add your key (see below)
 npm run dev                 # runs client + server together
 ```
 
@@ -41,7 +41,7 @@ Open http://localhost:5173.
 ### API key
 
 The reference proxy targets **Unsplash**. Grab a free demo key at
-<https://unsplash.com/developers> and put it in `.env`:
+<https://unsplash.com/developers> and put it in `server/.env`:
 
 ```
 UNSPLASH_ACCESS_KEY=your_key_here

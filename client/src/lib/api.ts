@@ -2,30 +2,66 @@ import type { SearchResponse } from './types';
 
 export class ApiError extends Error {
   constructor(
-    message: string,
     readonly status: number,
+    readonly code: string | null,
+    message: string,
+    readonly retryAfter?: string,
   ) {
     super(message);
     this.name = 'ApiError';
   }
 }
 
-/**
- * Minimal typed client for the backend proxy. It accepts an AbortSignal so you
- * can cancel stale requests — wiring that up (and any caching/dedup) is your job.
- */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isApiErrorBody(value: unknown): value is {
+  error: {
+    code: string;
+    message: string;
+  };
+} {
+  if (!isRecord(value) || !isRecord(value.error)) {
+    return false;
+  }
+
+  return (
+    typeof value.error.code === 'string' &&
+    value.error.code.trim().length > 0 &&
+    typeof value.error.message === 'string' &&
+    value.error.message.trim().length > 0
+  );
+}
+
+export async function parseSearchResponse(response: Response): Promise<SearchResponse> {
+  const body: unknown = await response.json().catch(() => null);
+
+  if (response.ok) {
+    return body as SearchResponse;
+  }
+
+  const retryAfter = response.headers.get('Retry-After') ?? undefined;
+
+  if (isApiErrorBody(body)) {
+    throw new ApiError(response.status, body.error.code, body.error.message, retryAfter);
+  }
+
+  throw new ApiError(
+    response.status,
+    null,
+    `Request failed with HTTP ${response.status}.`,
+    retryAfter,
+  );
+}
+
 export async function fetchSearch(
   query: string,
   page = 1,
   signal?: AbortSignal,
 ): Promise<SearchResponse> {
   const params = new URLSearchParams({ query, page: String(page) });
-  const res = await fetch(`/api/search?${params}`, { signal });
+  const response = await fetch(`/api/search?${params}`, { signal });
 
-  if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new ApiError(body?.error ?? `Request failed (${res.status})`, res.status);
-  }
-
-  return (await res.json()) as SearchResponse;
+  return parseSearchResponse(response);
 }

@@ -1,50 +1,138 @@
 import type { Photo, SearchResponse } from './types.js';
 
-/**
- * Example normalizer for the Unsplash `GET /search/photos` response.
- *
- * This exists so you have a reference for the "normalize the upstream payload
- * into a stable shape you own" requirement — and so there's something for the
- * example test to exercise. If you pick TMDB or the Art Institute of Chicago,
- * write the equivalent for that API and delete this.
- *
- * `unknown` in, typed `Photo[]` out — treat upstream data as untrusted.
- */
-interface UnsplashPhoto {
-  id: string;
-  description: string | null;
-  alt_description: string | null;
-  width: number;
-  height: number;
-  blur_hash: string | null;
-  urls: { small: string; regular: string };
-  user: { name: string } | null;
+const ATTRIBUTION_PARAMS = {
+  utm_source: 'buzz_image_search',
+  utm_medium: 'referral',
+} as const;
+
+export class InvalidUnsplashPayloadError extends Error {
+  constructor() {
+    super('Unsplash returned an invalid search payload.');
+    this.name = 'InvalidUnsplashPayloadError';
+  }
 }
 
-interface UnsplashSearchBody {
-  total_pages: number;
-  results: UnsplashPhoto[];
+interface UnsplashPhoto {
+  id: string;
+  description?: unknown;
+  alt_description?: unknown;
+  width: number;
+  height: number;
+  blur_hash?: unknown;
+  urls: {
+    small: string;
+    regular: string;
+  };
+  user: {
+    name: string;
+    links: {
+      html: string;
+    };
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function nonEmptyText(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  return value.trim() || null;
+}
+
+function isPositiveSafeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) > 0;
+}
+
+function isHttpsUrl(value: unknown): value is string {
+  const text = nonEmptyText(value);
+
+  if (!text) {
+    return false;
+  }
+
+  try {
+    const url = new URL(text);
+    return url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isUnsplashPhoto(value: unknown): value is UnsplashPhoto {
+  if (!isRecord(value) || !isRecord(value.urls) || !isRecord(value.user)) {
+    return false;
+  }
+
+  if (!isRecord(value.user.links)) {
+    return false;
+  }
+
+  return (
+    nonEmptyText(value.id) !== null &&
+    isPositiveSafeInteger(value.width) &&
+    isPositiveSafeInteger(value.height) &&
+    isHttpsUrl(value.urls.small) &&
+    isHttpsUrl(value.urls.regular) &&
+    nonEmptyText(value.user.name) !== null &&
+    isHttpsUrl(value.user.links.html)
+  );
+}
+
+function withAttributionParams(value: string): string {
+  const url = new URL(value);
+
+  for (const [name, parameter] of Object.entries(ATTRIBUTION_PARAMS)) {
+    url.searchParams.set(name, parameter);
+  }
+
+  return url.toString();
+}
+
+const UNSPLASH_SOURCE_URL = withAttributionParams('https://unsplash.com/');
+
+function normalizePhoto(raw: unknown): Photo | null {
+  if (!isUnsplashPhoto(raw)) {
+    return null;
+  }
+
+  return {
+    id: raw.id.trim(),
+    contentDescription: nonEmptyText(raw.alt_description) ?? nonEmptyText(raw.description),
+    width: raw.width,
+    height: raw.height,
+    thumbUrl: new URL(raw.urls.small).toString(),
+    fullUrl: new URL(raw.urls.regular).toString(),
+    blurHash: nonEmptyText(raw.blur_hash),
+    attribution: {
+      creatorName: raw.user.name.trim(),
+      creatorUrl: withAttributionParams(raw.user.links.html),
+      sourceName: 'Unsplash',
+      sourceUrl: UNSPLASH_SOURCE_URL,
+    },
+  };
 }
 
 export function normalizeUnsplashSearch(raw: unknown, query: string, page: number): SearchResponse {
-  // Upstream is untrusted — cast at the boundary. A stricter implementation
-  // would validate this (e.g. with zod) rather than trust the shape.
-  const body = raw as UnsplashSearchBody;
-  const results: Photo[] = (body.results ?? []).map((p) => ({
-    id: p.id,
-    description: p.description ?? p.alt_description ?? 'Untitled',
-    width: p.width,
-    height: p.height,
-    thumbUrl: p.urls.small,
-    fullUrl: p.urls.regular,
-    blurHash: p.blur_hash,
-    author: p.user?.name ?? null,
-  }));
+  if (
+    !isRecord(raw) ||
+    !Number.isSafeInteger(raw.total_pages) ||
+    Number(raw.total_pages) < 0 ||
+    !Array.isArray(raw.results)
+  ) {
+    throw new InvalidUnsplashPayloadError();
+  }
 
   return {
     query,
     page,
-    totalPages: body.total_pages ?? null,
-    results,
+    totalPages: raw.total_pages as number,
+    results: raw.results.flatMap((result) => {
+      const photo = normalizePhoto(result);
+      return photo ? [photo] : [];
+    }),
   };
 }

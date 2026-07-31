@@ -1,45 +1,70 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeUnsplashSearch } from './normalize.js';
+import { InvalidUnsplashPayloadError, normalizeUnsplashSearch } from './normalize.js';
 
-// Example test — proves the Vitest setup works and demonstrates the kind of
-// thing worth testing on the backend (a pure transform of untrusted input).
-// Replace/extend with tests for whatever normalizer and behaviors you build.
+function photo(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'abc',
+    description: 'fallback description',
+    alt_description: 'a cat on a wall',
+    width: 4000,
+    height: 3000,
+    blur_hash: 'LKO2?U',
+    urls: {
+      small: 'https://images.example/small.jpg',
+      regular: 'https://images.example/regular.jpg',
+    },
+    user: {
+      name: 'Ada L.',
+      links: { html: 'https://unsplash.com/@ada' },
+    },
+    ...overrides,
+  };
+}
+
 describe('normalizeUnsplashSearch', () => {
-  it('maps upstream fields onto the domain shape and falls back for missing descriptions', () => {
-    const upstream = {
-      total_pages: 5,
-      results: [
-        {
-          id: 'abc',
-          description: null,
-          alt_description: 'a cat on a wall',
-          width: 4000,
-          height: 3000,
-          blur_hash: 'LKO2?U',
-          urls: { small: 'https://img/small.jpg', regular: 'https://img/regular.jpg' },
-          user: { name: 'Ada L.' },
-        },
-      ],
-    };
+  it('normalizes usable siblings, nullable descriptions, and required attribution', () => {
+    const result = normalizeUnsplashSearch(
+      {
+        total_pages: 5,
+        results: [
+          photo(),
+          photo({
+            id: 'without-description',
+            description: null,
+            alt_description: null,
+          }),
+          photo({
+            id: 'invalid',
+            urls: { small: 'http://insecure.example/image.jpg' },
+          }),
+        ],
+      },
+      'cat',
+      1,
+    );
 
-    const result = normalizeUnsplashSearch(upstream, 'cat', 1);
-
-    expect(result).toEqual({
-      query: 'cat',
-      page: 1,
-      totalPages: 5,
-      results: [
-        {
-          id: 'abc',
-          description: 'a cat on a wall',
-          width: 4000,
-          height: 3000,
-          thumbUrl: 'https://img/small.jpg',
-          fullUrl: 'https://img/regular.jpg',
-          blurHash: 'LKO2?U',
-          author: 'Ada L.',
-        },
-      ],
+    expect(result.results).toHaveLength(2);
+    expect(result.results[0]).toMatchObject({
+      id: 'abc',
+      contentDescription: 'a cat on a wall',
+      blurHash: 'LKO2?U',
+      attribution: {
+        creatorName: 'Ada L.',
+        sourceName: 'Unsplash',
+      },
     });
+    expect(result.results[1]?.contentDescription).toBeNull();
+
+    const attribution = result.results[0]?.attribution;
+    expect(attribution?.creatorUrl).toContain('utm_source=buzz_image_search');
+    expect(attribution?.creatorUrl).toContain('utm_medium=referral');
+    expect(attribution?.sourceUrl).toContain('utm_source=buzz_image_search');
+    expect(attribution?.sourceUrl).toContain('utm_medium=referral');
+  });
+
+  it('rejects an unusable response envelope', () => {
+    expect(() => normalizeUnsplashSearch({ total_pages: -1, results: [] }, 'cat', 1)).toThrow(
+      InvalidUnsplashPayloadError,
+    );
   });
 });

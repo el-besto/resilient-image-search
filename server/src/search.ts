@@ -1,60 +1,58 @@
 import { type Request, type Response, Router } from 'express';
-import { normalizeUnsplashSearch } from './normalize.js';
+import {
+  createSearchCache,
+  createSearchService,
+  fetchUnsplash,
+  parseSearchInput,
+  translateSearchError,
+  UpstreamHttpError,
+} from './search-service.js';
 
 const router = Router();
-
-const UNSPLASH_ENDPOINT = 'https://api.unsplash.com/search/photos';
+const getSearchResults = createSearchService({
+  cache: createSearchCache(),
+  upstream: fetchUnsplash,
+});
 
 /**
  * GET /api/search?query=cats&page=1
- *
- * This is a WORKING reference proxy for Unsplash so you can boot the app
- * end-to-end. It is deliberately minimal. To meet the backend requirement,
- * improve it — see the TODOs. If you chose TMDB / Art Institute of Chicago,
- * swap the upstream call and normalizer accordingly.
  */
 router.get('/search', async (req: Request, res: Response) => {
-  const query = String(req.query.query ?? '').trim();
-  const page = Number(req.query.page ?? 1);
-
-  // TODO (validation): reject empty query / non-positive / non-integer page
-  // with a 400 and a message the client can render, instead of leaning on
-  // upstream to complain.
-  if (!query) {
-    return res.status(400).json({ error: 'Missing required "query" parameter.' });
-  }
-
-  const key = process.env.UNSPLASH_ACCESS_KEY;
-  if (!key) {
-    return res.status(500).json({
-      error: 'Server is missing UNSPLASH_ACCESS_KEY. Copy .env.example to .env and add a key.',
-    });
-  }
-
-  // TODO (caching): Unsplash allows only ~50 requests/hour on a demo key.
-  // Add a cache (keyed by query+page) so repeat searches don't burn quota.
   try {
-    const url = new URL(UNSPLASH_ENDPOINT);
-    url.searchParams.set('query', query);
-    url.searchParams.set('page', String(page));
-    url.searchParams.set('per_page', '24');
-
-    const upstream = await fetch(url, {
-      headers: { Authorization: `Client-ID ${key}` },
+    const input = parseSearchInput({
+      query: req.query.query,
+      page: req.query.page,
     });
+    const result = await getSearchResults(input);
 
-    // TODO (error mapping): translate upstream failures into something your UI
-    // can act on. A 429 (rate limited) and a 500 (upstream down) should not
-    // look identical to the client. Right now everything non-OK becomes 502.
-    if (!upstream.ok) {
-      return res.status(502).json({ error: `Upstream error (${upstream.status}).` });
+    if (res.destroyed) {
+      return;
     }
 
-    const body = await upstream.json();
-    return res.json(normalizeUnsplashSearch(body, query, page));
-  } catch (err) {
-    console.error(err);
-    return res.status(502).json({ error: 'Failed to reach the image provider.' });
+    return res.json(result);
+  } catch (error) {
+    const translated = translateSearchError(error);
+
+    if (translated.status >= 500 && translated.body.error.code === 'INTERNAL_ERROR') {
+      console.error('[server] unexpected search failure', error);
+    } else if (translated.status >= 500 || translated.status === 429) {
+      console.warn('[server] image provider request failed', {
+        code: translated.body.error.code,
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+        status: translated.status,
+        ...(error instanceof UpstreamHttpError ? { upstreamStatus: error.status } : {}),
+      });
+    }
+
+    if (res.destroyed) {
+      return;
+    }
+
+    if (translated.retryAfter) {
+      res.set('Retry-After', translated.retryAfter);
+    }
+
+    return res.status(translated.status).json(translated.body);
   }
 });
 

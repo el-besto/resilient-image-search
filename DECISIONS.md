@@ -24,9 +24,13 @@ reduced motion.
 
 The URL will own the committed query and page while the form owns only the transient draft.
 Explicit previous/next pagination keeps the view shareable, restores cleanly through browser
-history, and avoids infinite-scroll and scroll-restoration complexity. Client and server caches
-serve different purposes: the client makes revisits immediate, while the server protects the
-shared provider quota across refreshes and browser sessions.
+history, and avoids infinite-scroll and scroll-restoration complexity.
+
+The client cache improves revisit UX, while the server cache protects provider quota across
+browsers and refreshes. The server keeps successful normalized pages in a bounded five-minute LRU
+and separately coalesces concurrent same-key misses. Each miss gets one three-second server-owned
+provider attempt with no automatic retry; recovery is explicitly user-triggered. Browser
+cancellation cannot cancel shared upstream work still needed by another caller.
 
 The submission uses Node.js 22 so development and final verification run on a supported LTS line
 rather than the starter's older convenience pin.
